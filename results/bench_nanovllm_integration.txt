@@ -1,0 +1,34 @@
+Expected `transformers==4.40.1` and `tokenizers==0.19.1` but got `transformers==4.40.2` and `tokenizers==0.19.1`; there might be inference-time regressions due to dependency changes. If in doubt, pleaseuse the above versions.
+======================================================================
+OpenVLA 7B on nano-vllm Engine — Full Integration Benchmark
+GPU: NVIDIA A100-PCIE-40GB
+======================================================================
+
+Loading OpenVLA 7B...
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:03<00:06,  3.02s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:05<00:02,  2.77s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:06<00:00,  1.72s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:06<00:00,  2.03s/it]
+FP16 loaded: 15.13 GB
+
+Quantizing LLM with nano-vllm fused INT8 kernel...
+Quantized 224 layers. GPU: 15.14 GB
+
+Warmup...
+
+Benchmarking 30 consecutive frames...
+  FP16 Vanilla (baseline)        571.9 ms | 1.7 Hz | accept=0%
+  FP16 + SpecDec                 207.3 ms | 4.8 Hz | accept=100%
+  nano-vllm INT8 + SpecDec       206.6 ms | 4.8 Hz | accept=100%
+
+======================================================================
+RESULTS: OpenVLA 7B on nano-vllm Engine (A100-40GB)
+======================================================================
+Config                              Latency     Freq   Speedup   Accept
+----------------------------------------------------------------------
+FP16 Vanilla (baseline)             571.9 ms    1.7 Hz    1.00x        -
+FP16 + SpecDec                      207.3 ms    4.8 Hz    2.76x     100%
+nano-vllm INT8 + SpecDec            206.6 ms    4.8 Hz    2.77x     100%
+----------------------------------------------------------------------
+Quantized layers: 224 (nano-vllm per-channel absmax INT8)
+GPU memory: FP16=15.1GB -> nano-vllm INT8=15.1GB (-0% saved)
+INT8 weights stored for ONNX export -> TensorRT INT8 on Jetson Orin
+Inference uses pre-dequantized FP16 cache -> native cuBLAS speed
+======================================================================

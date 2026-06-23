@@ -1,0 +1,26 @@
+Expected `transformers==4.40.1` and `tokenizers==0.19.1` but got `transformers==4.40.2` and `tokenizers==0.19.1`; there might be inference-time regressions due to dependency changes. If in doubt, pleaseuse the above versions.
+======================================================================
+OpenVLA 7B — INT8 W8A16 + Temporal SpecDec
+GPU: NVIDIA A100-PCIE-40GB
+======================================================================
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:03<00:06,  3.25s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:05<00:02,  2.80s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:06<00:00,  1.71s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:06<00:00,  2.05s/it]
+FP16 model: 15.13 GB
+INT8 model: 22.05 GB (+6.92 GB, 225 layers quantized)
+  FP16 Vanilla       239.4 ms | 4.2 Hz
+  FP16 + SpecDec     151.4 ms | 6.6 Hz
+  INT8 Vanilla       560.9 ms | 1.8 Hz
+  INT8 + SpecDec     239.9 ms | 4.2 Hz
+
+======================================================================
+RESULTS: OpenVLA 7B on A100-40GB
+======================================================================
+Config                    Latency     Freq   Speedup   Accept    Calls
+--------------------------------------------------------------------
+FP16 Vanilla              239.4 ms    4.2 Hz     1.00x        -    7.0
+INT8 Vanilla              560.9 ms    1.8 Hz     0.43x        -    7.0
+FP16 + SpecDec            151.4 ms    6.6 Hz     1.58x      52%    4.2
+INT8 + SpecDec            239.9 ms    4.2 Hz     1.00x      85%    2.7
+--------------------------------------------------------------------
+Best: INT8+SpecDec = 1.00x over FP16 baseline
+Memory: FP16=15.1GB, +INT8=6.9GB
+======================================================================

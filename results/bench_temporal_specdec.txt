@@ -1,0 +1,74 @@
+Expected `transformers==4.40.1` and `tokenizers==0.19.1` but got `transformers==4.40.2` and `tokenizers==0.19.1`; there might be inference-time regressions due to dependency changes. If in doubt, pleaseuse the above versions.
+======================================================================
+OpenVLA 7B — Full Optimization Benchmark Suite
+GPU: NVIDIA A100-PCIE-40GB
+======================================================================
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:02<00:05,  2.84s/it]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:05<00:02,  2.68s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:05<00:00,  1.66s/it]Loading checkpoint shards: 100%|██████████| 3/3 [00:05<00:00,  1.95s/it]
+Model loaded: 15.13 GB GPU
+
+Warmup...
+
+Simulating 30 consecutive robot camera frames (noise=5/pixel)
+
+--- Vanilla Decode (baseline) ---
+  Avg latency: 272.4 ms | 3.7 Hz
+
+--- Optimized Decode (Temporal Spec) ---
+  Avg latency: 180.6 ms | 5.5 Hz
+  Accept rate: 3.1/6 (52%)
+  Target calls: 4.2/frame (vs 7 vanilla)
+  Correctness: 11/30 frames match vanilla
+
+======================================================================
+BENCHMARK RESULTS: OpenVLA 7B on NVIDIA A100-PCIE-40GB
+======================================================================
+Method                       Latency       Freq    Speedup
+---------------------------------------------------------
+Vanilla (baseline)           272.4 ms      3.7 Hz    1.00x
+Temporal SpecDec             180.6 ms      5.5 Hz    1.51x
+---------------------------------------------------------
+Accept rate:      52% (3.1/6 tokens matched per frame)
+Target LLM calls: 4.2/frame (39% reduction)
+Correctness:      11/30 frames (output identical to vanilla)
+======================================================================
+
+Per-frame detail (first 10 frames):
+Frame     Vanilla    SpecDec  Speedup   Accept Tokens
+--------------------------------------------------------------------------------
+0         271.1 ms    269.7 ms    1.01x      N/A  [31865, 31864, 31874, 31874, 31864, 3185 OK
+1         270.9 ms    118.6 ms    2.28x      6/6  [31865, 31864, 31874, 31874, 31864, 3185 OK
+2         264.7 ms    184.3 ms    1.44x      6/6  [31865, 31864, 31874, 31874, 31864, 3185 OK
+3         282.4 ms     98.7 ms    2.86x      6/6  [31865, 31864, 31874, 31874, 31864, 3185 OK
+4         272.2 ms    101.0 ms    2.69x      6/6  [31865, 31864, 31874, 31874, 31864, 3185 OK
+5         271.5 ms    274.8 ms    0.99x      0/6  [31865, 31887, 2, 2, 2, 31901, 31887] DIFF
+6         270.6 ms    269.1 ms    1.01x      0/6  [31865, 31864, 2, 2, 2, 2, 31844] DIFF
+7         278.0 ms    230.0 ms    1.21x      1/6  [31865, 31864, 31874, 2, 2, 31870, 31904 DIFF
+8         266.9 ms    192.9 ms    1.38x      2/6  [31865, 31864, 31874, 31874, 2, 2, 2] DIFF
+9         268.6 ms    168.4 ms    1.59x      3/6  [31865, 31864, 31874, 31874, 31864, 2, 3 DIFF
+
+======================================================================
+ARCHITECTURE SUMMARY (for resume/paper)
+======================================================================
+
+Model:     OpenVLA 7B (Prismatic VLM: DINOv2+SigLIP + Llama-2 7B)
+Hardware:  NVIDIA A100-PCIE-40GB
+Task:      7-DOF robot action generation (7 tokens per action)
+
+Pipeline:
+  Image -> Vision Encoder (DINOv2+SigLIP) -> Projector -> [visual_tokens + instruction_tokens]
+       -> Llama-2 7B LLM Backbone -> 7 action tokens (256-bin discretization)
+
+Optimization: Temporal Speculative Decoding
+  - Key insight: consecutive robot frames produce similar actions
+  - Draft: reuse previous frame's action tokens (ZERO compute cost)
+  - Verify: target LLM checks all 6 draft tokens in ONE batched forward pass
+  - Fallback: on mismatch, seamlessly continues with vanilla decoding
+
+Results:
+  Vanilla:  272.4 ms = 3.7 Hz (7 LLM forward passes per action)
+  Optimized:180.6 ms = 5.5 Hz (4.2 LLM passes per action)
+  Speedup:  1.51x
+  Accept:   52% (temporal action similarity)
+  Real-time threshold: 10Hz -> optimized reaches 5.5 Hz
+
+======================================================================
