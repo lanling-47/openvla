@@ -1,0 +1,74 @@
+======================================================================
+SmolVLA Inference Benchmark — A100-PCIE-40GB
+GPU: NVIDIA A100-PCIE-40GB
+PyTorch: 2.5.1+cu121, CUDA: 12.1
+======================================================================
+
+======================================================================
+COMPONENT 1: SmolVLM2 Vision-Language Backbone
+======================================================================
+VLM parameters: 507.5M
+  VLM forward:  69.49 ms (std=4.12)
+  GPU memory:   1.37 GB
+
+  --- Vision Cache Test ---
+  Feature diff (noise=5): 0.032990
+  Cache valid: NO (threshold strict)
+
+======================================================================
+COMPONENT 2: Flow-Matching Action Expert (Denoising Steps)
+======================================================================
+Simulated expert parameters: 2.7M
+  10 steps: 2.18 ms (std=0.09)
+   7 steps: 1.55 ms (std=0.05)
+   5 steps: 1.12 ms (std=0.03)
+   3 steps: 0.70 ms (std=0.03)
+   1 steps: 0.27 ms (std=0.01)
+
+  Temporal Warm-Start speedup: 3.13x (10 steps 2.18ms → 3 steps 0.70ms)
+
+======================================================================
+END-TO-END BENCHMARK: Simulated Robot Control Loop (30 frames)
+======================================================================
+
+--- Baseline: Full VLM + 10-step denoise ---
+  Frame   0: 522.3ms (VLM=519.8 + Denoise=2.6)
+  Frame   1: 514.7ms (VLM=512.2 + Denoise=2.5)
+  Frame   2: 531.5ms (VLM=529.1 + Denoise=2.4)
+  Frame  10: 519.7ms (VLM=517.3 + Denoise=2.4)
+  Frame  20: 542.1ms (VLM=539.5 + Denoise=2.6)
+  Avg: 525.5ms (1.9Hz)
+       VLM=523.0ms, Denoise=2.5ms
+
+--- Optimized: Vision Cache + Temporal Warm-Start (3 steps) ---
+  Frame   0 [smooth]:  526.2ms (VLM=523.6 + 3-step=2.5)
+  Frame   1 [smooth]:    1.9ms (CACHE=0.0 + 3-step=1.3)
+  Frame   2 [smooth]:    1.2ms (CACHE=0.0 + 3-step=0.9)
+  Frame   9 [smooth]:    1.2ms (CACHE=0.0 + 3-step=0.9)
+  Frame  10 [change]:  528.6ms (VLM=525.7 + 10-step=2.5)
+  Frame  11 [change]:  518.2ms (VLM=515.2 + 10-step=2.4)
+  Frame  12 [change]:  517.6ms (VLM=514.7 + 10-step=2.4)
+  Frame  13 [smooth]:    1.3ms (CACHE=0.0 + 3-step=0.9)
+  Frame  20 [smooth]:    1.2ms (CACHE=0.0 + 3-step=0.9)
+  Avg: 70.7ms (14.1Hz)
+  Smooth frames: 20.7ms (48.4Hz)
+  Change frames: 521.5ms (1.9Hz)
+  Vision cache: 26/30 hits (87%)
+  Warm starts:  26/30
+
+======================================================================
+SUMMARY: SmolVLA on NVIDIA A100-PCIE-40GB
+======================================================================
+Method                                 Latency       Freq    Speedup
+-------------------------------------------------------------------
+Baseline (VLM+10step)                  525.5ms      1.9Hz      1.00x
+Optimized (avg all frames)              70.7ms     14.1Hz      7.43x
+Optimized (smooth frames only)          20.7ms     48.4Hz     25.44x
+-------------------------------------------------------------------
+VLM backbone:       69.5ms (507M params)
+Denoise 10 steps:   2.18ms
+Denoise  3 steps:   0.70ms (3.1x faster)
+Vision cache diff:  0.032990
+Vision cache rate:  87%
+GPU memory:         2.07 GB peak
+======================================================================
